@@ -64,6 +64,9 @@ fn widths() -> Widths {
     widths.insert(Column::ChainName, 30);
     widths.insert(Column::CosmWasmEnabled, 8);
     widths.insert(Column::CosmWasmVersion, 10);
+    widths.insert(Column::CosmosSdkVersion, 10);
+    widths.insert(Column::GitRepository, 40);
+    widths.insert(Column::RecommendedVersion, 11);
     widths
 }
 
@@ -71,16 +74,18 @@ fn displayed(displayed: &[&str]) -> HashSet<String> {
     displayed.iter().map(|s| s.to_string()).collect()
 }
 
+#[rustfmt::skip]
 fn print_header() {
-    println!("┌────────────────────────────────┬───────────────────────┐");
-    println!("│                                │       CosmWasm        │");
-    println!("│     Chain name                 ├──────────┬────────────┤");
-    println!("│                                │ Enabled  │  Version   │");
-    println!("├────────────────────────────────┼──────────┼────────────┤");
+    println!("┌────────────────────────────────┬───────────────────────┬────────────┬──────────────────────────────────────────┬─────────────┐");
+    println!("│                                │       CosmWasm        │            │                                          │ Chain       │");
+    println!("│     Chain name                 ├──────────┬────────────┤ Cosmos SDK │                                          │ recommended │");
+    println!("│                                │ enabled  │  version   │   version  │ Git repository                           │ version     │");
+    println!("├────────────────────────────────┼──────────┼────────────┼────────────┼──────────────────────────────────────────┼─────────────┤");
 }
 
+#[rustfmt::skip]
 fn print_footer() {
-    println!("└────────────────────────────────┴──────────┴────────────┘");
+    println!("└────────────────────────────────┴──────────┴────────────┴────────────┴──────────────────────────────────────────┴─────────────┘");
 }
 
 fn main() {
