@@ -91,7 +91,7 @@ fn print_footer() {
 fn main() {
     let path = Path::new(CHAIN_REGISTRY_REPO);
     let widths = widths();
-    let displayed = displayed(&["neutron", "terra", "terra2"]);
+    let displayed = displayed(&["neutron", "terra2"]);
     print_header();
     chains(path)
         .drain(..)
