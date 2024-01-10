@@ -1,8 +1,10 @@
+mod columns;
 mod model;
 
-use crate::model::{report, Chain};
-use std::collections::BTreeMap;
-use std::fs;
+use crate::columns::{Column, Columns, Widths};
+use crate::model::Chain;
+use std::collections::{BTreeMap, HashSet};
+use std::fs::{read_dir, read_to_string};
 use std::path::Path;
 
 const CHAIN_REGISTRY_REPO: &str = "../chain-registry";
@@ -11,7 +13,7 @@ type DataFiles = (Option<String>, Option<String>);
 
 ///
 fn search_files(path: &Path, files: &mut BTreeMap<String, DataFiles>) {
-    if let Ok(entries) = fs::read_dir(path) {
+    if let Ok(entries) = read_dir(path) {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_dir() {
@@ -42,15 +44,57 @@ fn search_files(path: &Path, files: &mut BTreeMap<String, DataFiles>) {
     }
 }
 
-fn main() {
+fn chains(path: &Path) -> Vec<Chain> {
+    let mut chains: Vec<Chain> = vec![];
     let mut data_files = BTreeMap::new();
-    search_files(Path::new(CHAIN_REGISTRY_REPO), &mut data_files);
+    search_files(path, &mut data_files);
     for (dir, (chain, _asset_list)) in data_files {
         if let Some(chain) = chain {
-            let content = fs::read_to_string(format!("{}/{}", dir, chain))
-                .expect("loading chain.json failed");
-            let chain: Chain = serde_json::from_str(&content).expect("parsing chain.json failed");
-            println!("{:80} {}", dir, report(&chain));
+            let file_name = format!("{}/{}", dir, chain);
+            let content = read_to_string(file_name).expect("loading chain.json failed");
+            chains.push(serde_json::from_str(&content).expect("parsing chain.json failed"));
         }
     }
+    chains.sort_by_key(|chain| chain.chain_name.clone());
+    chains
+}
+
+fn widths() -> Widths {
+    let mut widths = BTreeMap::new();
+    widths.insert(Column::ChainName, 30);
+    widths.insert(Column::CosmWasmEnabled, 8);
+    widths.insert(Column::CosmWasmVersion, 10);
+    widths
+}
+
+fn displayed(displayed: &[&str]) -> HashSet<String> {
+    displayed.iter().map(|s| s.to_string()).collect()
+}
+
+fn print_header() {
+    println!("┌────────────────────────────────┬───────────────────────┐");
+    println!("│                                │       CosmWasm        │");
+    println!("│     Chain name                 ├──────────┬────────────┤");
+    println!("│                                │ Enabled  │  Version   │");
+    println!("├────────────────────────────────┼──────────┼────────────┤");
+}
+
+fn print_footer() {
+    println!("└────────────────────────────────┴──────────┴────────────┘");
+}
+
+fn main() {
+    let path = Path::new(CHAIN_REGISTRY_REPO);
+    let widths = widths();
+    let displayed = displayed(&["neutron", "terra", "terra2"]);
+    print_header();
+    chains(path)
+        .drain(..)
+        .filter(|chain| !chain.chain_name.is_empty())
+        .filter(|chain| displayed.contains(&chain.chain_name))
+        .for_each(|chain| {
+            let columns: Columns = chain.into();
+            println!("│{}", columns.report_line(&widths));
+        });
+    print_footer();
 }
